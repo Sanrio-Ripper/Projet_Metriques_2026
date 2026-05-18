@@ -1,9 +1,240 @@
 <!doctype html>
 <html lang="fr">
-  <head><meta charset="utf-8"><title>Hello</title></head>
-  <body>
-    <h1>ATELIER METRIQUES</h1>
-    <h2>Nom Prénom : ...........</h2>
-  </body>
-</html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atelier Métriques — Sabrina Mhidi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    body {
+      min-height: 100vh;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a1a2e);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #fff;
+      overflow-x: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Particules en arrière-plan */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      animation: float 20s infinite ease-in-out;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      50% { transform: translateY(-100vh) translateX(50px); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 8px 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+      margin-bottom: 30px;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .badge::before {
+      content: "●";
+      color: #4ade80;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    h1 {
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      font-weight: 700;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 50px;
+      font-weight: 400;
+      animation: fadeInUp 0.8s ease-out 0.4s both;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: fadeInUp 0.8s ease-out 0.6s both;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: rgba(255, 255, 255, 0.4);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .name {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 500;
+      letter-spacing: -1px;
+      color: #fff;
+    }
+
+    .nav {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 40px;
+      animation: fadeInUp 0.8s ease-out 0.8s both;
+    }
+
+    .nav a {
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .nav a:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .nav a::before {
+      content: "→ ";
+      color: #a78bfa;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 2px;
+      z-index: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <div class="badge">PROJET 2026 / FLASK / API</div>
+    
+    <h1>Atelier<br>Métriques</h1>
+    
+    <p class="subtitle">Création de graphiques via API et Framework Flask</p>
+
+    <div class="card">
+      <div class="label">Étudiant</div>
+      <div class="name">Sabrina Mhidi</div>
+    </div>
+
+    <nav class="nav">
+      <a href="/paris">/paris</a>
+      <a href="/rapport">/rapport</a>
+      <a href="/histogramme">/histogramme</a>
+      <a href="/atelier">/atelier</a>
+      <a href="/contact">/contact</a>
+    </nav>
+  </div>
+
+  <footer>© 2026 — POWERED BY FLASK</footer>
+
+  <script>
+    // Génération des particules flottantes
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.classList.add('particle');
+      const size = Math.random() * 4 + 1;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 20 + 's';
+      p.style.animationDuration = (Math.random() * 10 + 15) + 's';
+      particlesContainer.appendChild(p);
+    }
+  </script>
+</body>
+</html>
