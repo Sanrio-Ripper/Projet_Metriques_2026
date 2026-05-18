@@ -117,3 +117,101 @@
   <div class="container">
     <div class="header">
       <div class="badge">HISTOGRAMME / MOYENNES</div>
+      <h1>Températures<br>journalières Paris</h1>
+      <p class="subtitle">Moyennes quotidiennes sur 7 jours • Source : open-meteo.com</p>
+    </div>
+
+    <div class="card">
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    async function init() {
+      try {
+        const res = await fetch('/paris');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        const tempsParJour = {};
+        json.forEach(p => {
+          const jour = p.datetime.split('T')[0];
+          if (!tempsParJour[jour]) tempsParJour[jour] = [];
+          tempsParJour[jour].push(Number(p.temperature_c));
+        });
+
+        const labels = Object.keys(tempsParJour).sort();
+        const moyennes = labels.map(j => {
+          const arr = tempsParJour[j];
+          return (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1);
+        });
+
+        const labelsFormates = labels.map(d => {
+          const [y, m, day] = d.split('-');
+          return `${day}/${m}`;
+        });
+
+        const couleurs = moyennes.map(t => {
+          const temp = Number(t);
+          if (temp < 5) return 'rgba(96, 165, 250, 0.85)';
+          if (temp < 15) return 'rgba(74, 222, 128, 0.85)';
+          if (temp < 25) return 'rgba(251, 191, 36, 0.85)';
+          return 'rgba(239, 68, 68, 0.85)';
+        });
+
+        new Chart(document.getElementById('chart'), {
+          type: 'bar',
+          data: {
+            labels: labelsFormates,
+            datasets: [{
+              label: 'Température moyenne (°C)',
+              data: moyennes,
+              backgroundColor: couleurs,
+              borderColor: couleurs.map(c => c.replace('0.85', '1')),
+              borderWidth: 2,
+              borderRadius: 12,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: 'rgba(255,255,255,0.85)', font: { size: 13 } } },
+              tooltip: {
+                backgroundColor: 'rgba(15, 12, 41, 0.95)',
+                borderColor: 'rgba(167, 139, 250, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: { label: ctx => ` ${ctx.parsed.y} °C` }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: 'rgba(255,255,255,0.5)' },
+                grid: { display: false }
+              },
+              y: {
+                ticks: { color: 'rgba(255,255,255,0.5)', callback: v => v + '°' },
+                grid: { color: 'rgba(255,255,255,0.05)' },
+                beginAtZero: false
+              }
+            }
+          }
+        });
+
+        document.getElementById('status').textContent =
+          `${labels.length} JOURS • BLEU < 5° < VERT < 15° < JAUNE < 25° < ROUGE`;
+      } catch (err) {
+        document.getElementById('status').textContent = 'ERREUR : ' + err.message;
+        console.error(err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
