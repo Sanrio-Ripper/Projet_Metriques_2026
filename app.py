@@ -13,6 +13,10 @@ def hello_world():
 def MaPremiereAPI():
     return "<h2>Ma page de contact</h2>"
 
+@app.route("/histogramme")
+def histogramme():
+    return render_template("histogramme.html")
+
 @app.get("/paris")
 def api_paris():
     url = "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&hourly=temperature_2m"
