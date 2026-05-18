@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Histogramme Paris — Chart.js</title>
-
+  <title>Histogramme Paris — Atelier Métriques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
   <style>
@@ -12,151 +12,108 @@
 
     body {
       min-height: 100vh;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      padding: 40px 20px;
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #1a1a2e);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
       color: #fff;
+      padding: 40px 20px;
     }
 
-    .container { max-width: 1100px; margin: 0 auto; }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
 
-    .header { text-align: center; margin-bottom: 30px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .header { text-align: center; margin-bottom: 40px; }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+    .badge::before {
+      content: "●";
+      color: #4ade80;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
     h1 {
-      font-size: 2.5rem;
+      font-size: clamp(2rem, 5vw, 3.5rem);
       font-weight: 700;
       letter-spacing: -1px;
-      margin-bottom: 10px;
+      line-height: 1.1;
+      margin-bottom: 15px;
+      background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .subtitle { opacity: 0.9; font-size: 1rem; }
+    .subtitle { color: rgba(255, 255, 255, 0.6); font-size: 1rem; }
 
     .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      color: #333;
     }
 
     .chart-container { position: relative; height: 500px; }
 
-    #status { margin-top: 16px; text-align: center; font-size: 14px; color: #666; }
+    #status {
+      margin-top: 16px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+    }
 
     .back {
-      display: inline-block;
-      margin-top: 20px;
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
       color: #fff;
       text-decoration: none;
-      opacity: 0.85;
-      transition: opacity 0.3s;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      z-index: 10;
     }
-    .back:hover { opacity: 1; }
+    .back:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(-3px);
+    }
   </style>
 </head>
 
 <body>
+  <a href="/" class="back">← Accueil</a>
+
   <div class="container">
     <div class="header">
-      <h1>Températures journalières — Paris</h1>
-      <p class="subtitle">Moyennes quotidiennes sur 7 jours • Source : open-meteo.com</p>
-    </div>
-
-    <div class="card">
-      <div class="chart-container">
-        <canvas id="chart"></canvas>
-      </div>
-      <div id="status"></div>
-    </div>
-
-    <a href="/" class="back">← Retour à l'accueil</a>
-  </div>
-
-  <script>
-    async function init() {
-      try {
-        const res = await fetch('/paris');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-
-        // Regrouper par jour et calculer la moyenne
-        const tempsParJour = {};
-        json.forEach(p => {
-          const jour = p.datetime.split('T')[0];
-          if (!tempsParJour[jour]) tempsParJour[jour] = [];
-          tempsParJour[jour].push(Number(p.temperature_c));
-        });
-
-        const labels = Object.keys(tempsParJour).sort();
-        const moyennes = labels.map(j => {
-          const arr = tempsParJour[j];
-          return (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1);
-        });
-
-        // Formater les labels (JJ/MM)
-        const labelsFormates = labels.map(d => {
-          const [y, m, day] = d.split('-');
-          return `${day}/${m}`;
-        });
-
-        // Couleur dégradée selon la température
-        const couleurs = moyennes.map(t => {
-          const temp = Number(t);
-          if (temp < 5) return 'rgba(59, 130, 246, 0.8)';   // bleu
-          if (temp < 15) return 'rgba(34, 197, 94, 0.8)';   // vert
-          if (temp < 25) return 'rgba(251, 191, 36, 0.8)';  // jaune
-          return 'rgba(239, 68, 68, 0.8)';                  // rouge
-        });
-
-        const ctx = document.getElementById('chart');
-        new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: labelsFormates,
-            datasets: [{
-              label: 'Température moyenne (°C)',
-              data: moyennes,
-              backgroundColor: couleurs,
-              borderColor: couleurs.map(c => c.replace('0.8', '1')),
-              borderWidth: 2,
-              borderRadius: 10,
-              borderSkipped: false
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'top', labels: { font: { size: 14 } } },
-              tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.85)',
-                padding: 12,
-                callbacks: { label: ctx => ` ${ctx.parsed.y} °C` }
-              }
-            },
-            scales: {
-              x: {
-                title: { display: true, text: 'Jour' },
-                grid: { display: false }
-              },
-              y: {
-                title: { display: true, text: 'Température (°C)' },
-                grid: { color: 'rgba(0,0,0,0.05)' },
-                beginAtZero: false
-              }
-            }
-          }
-        });
-
-        document.getElementById('status').textContent =
-          `${labels.length} jours analysés • Légende couleur : bleu < 5°C < vert < 15°C < jaune < 25°C < rouge`;
-      } catch (err) {
-        document.getElementById('status').textContent = 'Erreur : ' + err.message;
-        console.error(err);
-      }
-    }
-
-    init();
-  </script>
-</body>
-</html>
+      <div class="badge">HISTOGRAMME / MOYENNES</div>
