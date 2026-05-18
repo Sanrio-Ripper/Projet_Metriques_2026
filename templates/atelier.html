@@ -71,3 +71,218 @@
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 550px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-unit {
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.5);
+      margin-left: 4px;
+    }
+
+    #status {
+      margin-top: 20px;
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 1px;
+    }
+
+    .back {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      color: #fff;
+      text-decoration: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      z-index: 10;
+    }
+    .back:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateX(-3px);
+    }
+  </style>
+</head>
+
+<body>
+  <a href="/" class="back">← Accueil</a>
+
+  <div class="container">
+    <div class="header">
+      <div class="badge">ATELIER / RADAR</div>
+      <h1>Vent à<br>Marseille</h1>
+      <p class="subtitle">Vitesse moyenne journalière (km/h) sur 7 jours • Source : open-meteo.com</p>
+    </div>
+
+    <div class="card">
+      <div class="chart-container">
+        <canvas id="chart"></canvas>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Moyenne</div>
+          <div class="stat-value"><span id="moyenne">--</span><span class="stat-unit">km/h</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Maximum</div>
+          <div class="stat-value"><span id="max">--</span><span class="stat-unit">km/h</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Minimum</div>
+          <div class="stat-value"><span id="min">--</span><span class="stat-unit">km/h</span></div>
+        </div>
+      </div>
+
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script>
+    async function init() {
+      try {
+        const res = await fetch('/marseille');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+
+        // Regrouper par jour et calculer la moyenne
+        const ventsParJour = {};
+        json.forEach(p => {
+          const jour = p.datetime.split('T')[0];
+          if (!ventsParJour[jour]) ventsParJour[jour] = [];
+          ventsParJour[jour].push(Number(p.wind_kmh));
+        });
+
+        const labels = Object.keys(ventsParJour).sort();
+        const moyennes = labels.map(j => {
+          const arr = ventsParJour[j];
+          return Number((arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1));
+        });
+
+        const labelsJour = labels.map(d => {
+          const [y, m, day] = d.split('-');
+          const date = new Date(y, m - 1, day);
+          const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+          return `${jours[date.getDay()]} ${day}/${m}`;
+        });
+
+        // Stats
+        const moyenneGlobale = (moyennes.reduce((s, v) => s + v, 0) / moyennes.length).toFixed(1);
+        const maxVent = Math.max(...moyennes).toFixed(1);
+        const minVent = Math.min(...moyennes).toFixed(1);
+
+        document.getElementById('moyenne').textContent = moyenneGlobale;
+        document.getElementById('max').textContent = maxVent;
+        document.getElementById('min').textContent = minVent;
+
+        new Chart(document.getElementById('chart'), {
+          type: 'radar',
+          data: {
+            labels: labelsJour,
+            datasets: [{
+              label: 'Vitesse du vent (km/h)',
+              data: moyennes,
+              borderColor: '#a78bfa',
+              backgroundColor: 'rgba(167, 139, 250, 0.25)',
+              borderWidth: 2.5,
+              pointBackgroundColor: '#60a5fa',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+              pointRadius: 5,
+              pointHoverRadius: 8,
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: '#a78bfa'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: 'rgba(255,255,255,0.85)', font: { size: 13 } } },
+              tooltip: {
+                backgroundColor: 'rgba(15, 12, 41, 0.95)',
+                borderColor: 'rgba(167, 139, 250, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: { label: ctx => ` ${ctx.parsed.r} km/h` }
+              }
+            },
+            scales: {
+              r: {
+                angleLines: { color: 'rgba(255,255,255,0.15)' },
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                pointLabels: {
+                  color: 'rgba(255,255,255,0.85)',
+                  font: { size: 13, family: 'Space Grotesk' }
+                },
+                ticks: {
+                  color: 'rgba(255,255,255,0.4)',
+                  backdropColor: 'transparent',
+                  callback: v => v + ' km/h'
+                }
+              }
+            }
+          }
+        });
+
+        document.getElementById('status').textContent = `${labels.length} JOURS ANALYSÉS • API /marseille`;
+      } catch (err) {
+        document.getElementById('status').textContent = 'ERREUR : ' + err.message;
+        console.error(err);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
