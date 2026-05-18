@@ -46,11 +46,6 @@
       content: "●";
       color: #4ade80;
       margin-right: 6px;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
     }
 
     h1 {
@@ -70,14 +65,21 @@
     .card {
       background: rgba(255, 255, 255, 0.05);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px;
       padding: 30px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     }
 
-    .chart-container { position: relative; height: 500px; }
+    .chart-wrap {
+      width: 100%;
+      height: 500px;
+      position: relative;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
 
     #status {
       margin-top: 16px;
@@ -106,7 +108,6 @@
     }
     .back:hover {
       background: rgba(255, 255, 255, 0.15);
-      transform: translateX(-3px);
     }
   </style>
 </head>
@@ -122,20 +123,28 @@
     </div>
 
     <div class="card">
-      <div class="chart-container">
+      <div class="chart-wrap">
         <canvas id="chart"></canvas>
       </div>
-      <div id="status"></div>
+      <div id="status">Chargement...</div>
     </div>
   </div>
 
   <script>
-    async function init() {
+    window.addEventListener('load', async () => {
+      const statusEl = document.getElementById('status');
+
       try {
+        if (typeof Chart === 'undefined') {
+          statusEl.textContent = 'ERREUR : Chart.js non chargé';
+          return;
+        }
+
         const res = await fetch('/paris');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const json = await res.json();
 
+        // Regroupement par jour
         const tempsParJour = {};
         json.forEach(p => {
           const jour = p.datetime.split('T')[0];
@@ -146,23 +155,24 @@
         const labels = Object.keys(tempsParJour).sort();
         const moyennes = labels.map(j => {
           const arr = tempsParJour[j];
-          return (arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1);
+          return Number((arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1));
         });
 
         const labelsFormates = labels.map(d => {
-          const [y, m, day] = d.split('-');
-          return `${day}/${m}`;
+          const parts = d.split('-');
+          return parts[2] + '/' + parts[1];
         });
 
         const couleurs = moyennes.map(t => {
-          const temp = Number(t);
-          if (temp < 5) return 'rgba(96, 165, 250, 0.85)';
-          if (temp < 15) return 'rgba(74, 222, 128, 0.85)';
-          if (temp < 25) return 'rgba(251, 191, 36, 0.85)';
+          if (t < 5) return 'rgba(96, 165, 250, 0.85)';
+          if (t < 15) return 'rgba(74, 222, 128, 0.85)';
+          if (t < 25) return 'rgba(251, 191, 36, 0.85)';
           return 'rgba(239, 68, 68, 0.85)';
         });
 
-        new Chart(document.getElementById('chart'), {
+        const ctx = document.getElementById('chart').getContext('2d');
+
+        new Chart(ctx, {
           type: 'bar',
           data: {
             labels: labelsFormates,
@@ -170,48 +180,46 @@
               label: 'Température moyenne (°C)',
               data: moyennes,
               backgroundColor: couleurs,
-              borderColor: couleurs.map(c => c.replace('0.85', '1')),
-              borderWidth: 2,
-              borderRadius: 12,
-              borderSkipped: false
+              borderWidth: 0,
+              borderRadius: 12
             }]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: { labels: { color: 'rgba(255,255,255,0.85)', font: { size: 13 } } },
+              legend: {
+                labels: { color: 'rgba(255,255,255,0.85)', font: { size: 13 } }
+              },
               tooltip: {
                 backgroundColor: 'rgba(15, 12, 41, 0.95)',
-                borderColor: 'rgba(167, 139, 250, 0.3)',
-                borderWidth: 1,
                 padding: 12,
-                callbacks: { label: ctx => ` ${ctx.parsed.y} °C` }
+                callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y + ' °C'; } }
               }
             },
             scales: {
               x: {
-                ticks: { color: 'rgba(255,255,255,0.5)' },
+                ticks: { color: 'rgba(255,255,255,0.6)' },
                 grid: { display: false }
               },
               y: {
-                ticks: { color: 'rgba(255,255,255,0.5)', callback: v => v + '°' },
-                grid: { color: 'rgba(255,255,255,0.05)' },
+                ticks: {
+                  color: 'rgba(255,255,255,0.6)',
+                  callback: function(v) { return v + '°'; }
+                },
+                grid: { color: 'rgba(255,255,255,0.08)' },
                 beginAtZero: false
               }
             }
           }
         });
 
-        document.getElementById('status').textContent =
-          `${labels.length} JOURS • BLEU < 5° < VERT < 15° < JAUNE < 25° < ROUGE`;
+        statusEl.textContent = labels.length + ' JOURS • BLEU < 5° < VERT < 15° < JAUNE < 25° < ROUGE';
       } catch (err) {
-        document.getElementById('status').textContent = 'ERREUR : ' + err.message;
+        statusEl.textContent = 'ERREUR : ' + err.message;
         console.error(err);
       }
-    }
-
-    init();
+    });
   </script>
 </body>
 </html>
